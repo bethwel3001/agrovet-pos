@@ -1,140 +1,118 @@
-# Module E — Web Back Office (apps/web)
+# Web (apps/web)
 
-**Owner:** Dev 5  
-**Stack:** React 18 + Vite + Tailwind CSS + shadcn/ui
+The public website for AgroVet POS. It explains what the product is and hands the
+visitor off to WhatsApp — that button is the only conversion action on the page.
 
----
-
-## Responsibility
-
-The back office web dashboard for shop owners/staff. Accessed via browser (not WhatsApp). Lets admins:
-- View live sales ledger
-- Manage stock inventory
-- Manage product catalogue (names, aliases, default prices)
-- View weekly/monthly reports and charts
+**Stack:** React 18 + Vite + TypeScript + Tailwind CSS v4
 
 ---
 
-## Setup
+## Run it
 
 ```bash
-# From repo root
-pnpm install
-pnpm --filter @agrovet/web dev
-# → http://localhost:5173
+pnpm install          # from the repo root
+cd apps/web
+pnpm dev              # http://localhost:5173
 ```
 
-API base URL defaults to `http://localhost:3000`. Configure in `.env.local`:
+```bash
+pnpm build       # tsc -b && vite build  →  dist/
+pnpm preview     # serve dist/ locally
+pnpm typecheck
+```
+
+### Tailwind v4
+
+This app uses Tailwind **v4** via `@tailwindcss/vite`, not the v3 + PostCSS + `autoprefixer`
+setup. There is no `tailwind.config.js` — the theme lives in `src/index.css` under `@theme`.
+If you add a package here, don't reintroduce `postcss`/`autoprefixer`; the Vite plugin
+replaces both.
+
+---
+
+## Configuration
+
+Copy `.env.example` to `.env.local`:
+
 ```env
-VITE_API_BASE_URL=http://localhost:3000
+VITE_WHATSAPP_NUMBER=254700000000
+VITE_WHATSAPP_PREFILL=Hi, I run an agrovet and I want to try AgroVet POS.
 ```
+
+`VITE_WHATSAPP_NUMBER` is the business number in international format with no `+`.
+Every "Open WhatsApp" button builds a `https://wa.me/<number>?text=<prefill>` link from
+these two values.
+
+**Until a real number is set**, the buttons do not navigate. `site.ts` compares the env
+value against the `254700000000` placeholder and exports `whatsappConfigured`; when that
+is false, `WhatsAppButton` cancels the click and raises a toast — "WhatsApp is not
+connected yet." That keeps visitors off a dead `wa.me` link while the bot is being wired
+up. Set the real number and the buttons go live with no code change.
+
+The toast itself lives in `src/toast.ts` (module-level pub/sub, no provider needed) and
+`src/components/Toast.tsx` (one toast at a time, auto-dismisses after 4s). Raise one from
+anywhere with `showToast('message')`.
 
 ---
 
-## Folder Structure
+## Design system
 
-```
-apps/web/src/
-├── main.tsx                ← React root
-├── App.tsx                 ← Router setup (React Router v6)
-│
-├── pages/
-│   ├── Login.tsx           ← JWT login form
-│   ├── Dashboard.tsx       ← Today's stats (sales count, revenue, invoices)
-│   ├── Sales.tsx           ← Paginated ledger, date filter, CSV export
-│   ├── Stock.tsx           ← Inventory table, low-stock highlights, adjust modal
-│   ├── Products.tsx        ← Add/edit product catalogue + alias management
-│   └── Reports.tsx         ← Weekly/monthly bar + line charts (Recharts)
-│
-├── components/
-│   ├── Layout.tsx          ← Sidebar nav + header wrapper
-│   ├── StatsCard.tsx       ← Metric card (revenue, invoices count, etc.)
-│   ├── SalesTable.tsx      ← Paginated table with TanStack Table
-│   ├── StockTable.tsx      ← Stock with low-stock badge highlight
-│   ├── ProductForm.tsx     ← Create/edit product modal
-│   └── AdjustStockModal.tsx
-│
-├── api/
-│   └── client.ts           ← Axios instance with JWT auth header
-│
-└── store/
-    └── auth.store.ts       ← Zustand: token, user, login/logout
-```
+Defined once in `src/index.css` under `@theme`, then used through Tailwind utilities
+(`bg-green`, `text-muted`, `border-line`, `font-display`).
+
+| Token | Value | Used for |
+|---|---|---|
+| `paper` | `#ffffff` | Page background |
+| `ink` | `#0b0b0b` | Body text, the dark "gap" section |
+| `muted` | `#6a6a6a` | Secondary copy |
+| `line` / `line-strong` | `#e7e7e7` / `#cfcfcf` | Hairline rules and grid gaps |
+| `green` / `green-deep` / `green-soft` | `#12784f` / `#0d5c3c` / `#eff6f2` | Primary action, accents, closing band |
+| `blue` / `blue-deep` / `blue-soft` | `#1f45c9` / `#16359e` / `#eef1fc` | Compliance band, links, "coming next" |
+
+**Type:** Comfortaa (`font-display`) for headings and figures, Montserrat (`font-sans`)
+for everything else. Both load from Google Fonts in `index.html`.
+
+**Rules of the house**
+- Four colours only: white, black, green, blue. No greys beyond the tokens above.
+- No emojis anywhere in the UI. Icons are hand-rolled SVGs in `src/components/ui.tsx`.
+- Sections are separated by a 1px `border-line` rule, not by shadows or cards.
+- Grids get their dividers from `gap-px` over a `bg-line` parent, so every line is hairline.
+- One container width: the `.shell` class. Everything lines up on the same left edge.
 
 ---
 
-## Dependencies
+## Structure
 
-```bash
-# Core
-react react-dom react-router-dom axios zustand
-
-# UI
-tailwindcss @tailwindcss/forms
-shadcn/ui (via CLI: npx shadcn@latest init)
-
-# Tables
-@tanstack/react-table
-
-# Charts
-recharts
-
-# Icons
-lucide-react
+```
+src/
+├── main.tsx              React root
+├── App.tsx               Section order — the whole page is one scroll
+├── index.css             Design tokens (@theme) + base styles
+├── site.ts               WhatsApp URL + whatsappConfigured, nav items, contact
+├── toast.ts              Tiny pub/sub behind showToast()
+└── components/
+    ├── ui.tsx            Button, WhatsAppButton, Section, SVG icons
+    ├── Toast.tsx         Renders the active toast
+    ├── Nav.tsx           Sticky header, borders in on scroll
+    ├── Hero.tsx          Headline + primary CTA
+    ├── Conversation.tsx  The sell → yes → receipt thread, revealed on scroll
+    ├── Problem.tsx       Black section: the market gap, three figures
+    ├── HowItWorks.tsx    Four numbered steps
+    ├── Features.tsx      Six-cell capability grid
+    ├── Compliance.tsx    Blue band: what makes the invoice legal
+    ├── Pricing.tsx       Free / Pro / Partner
+    ├── Faq.tsx           Native <details> accordion
+    ├── Closer.tsx        Green band, final CTA
+    └── Footer.tsx
 ```
 
-Install via:
-```bash
-pnpm --filter @agrovet/web add react react-dom react-router-dom axios zustand recharts @tanstack/react-table lucide-react
-```
+To reorder or drop a section, edit `App.tsx` — sections are self-contained and read
+their own copy from a const array at the top of the file.
 
 ---
 
-## Pages Detail
+## Not here yet
 
-### Dashboard
-- Stats cards: Total Sales Today, Revenue Today, Invoices Issued, Low Stock Alerts
-- Recent sales table (last 10)
-- Auto-refreshes every 30s
-
-### Sales Ledger (`/sales`)
-- Date range filter
-- Columns: Date, Invoice #, Items, Total, Status (INVOICED / FAILED)
-- Click row → expand line items
-- CSV export button
-
-### Stock (`/stock`)
-- All products, current qty, unit, low-stock threshold
-- Red highlight when `stockQty <= lowStockAlert`
-- "Adjust" button → modal to add/remove stock with note
-- Sort by name or stock level
-
-### Products (`/products`)
-- Table of all products
-- "Add Product" button → modal form (name, aliases CSV, unit, default price, low stock alert)
-- Edit/deactivate existing products
-- **Aliases are critical** — they power the WhatsApp parser. Example: `"dap, dap fertilizer, diammonium phosphate"`
-
-### Reports (`/reports`)
-- Weekly bar chart: daily revenue for last 7 days
-- Top 5 products by qty sold (pie or horizontal bar)
-- Low-stock alert list
-
----
-
-## Auth Flow
-
-1. `POST /auth/login` with email + password
-2. Store JWT token in Zustand + localStorage
-3. Axios interceptor adds `Authorization: Bearer <token>` to all requests
-4. On 401 → clear store → redirect to `/login`
-
----
-
-## Mocking During Dev
-
-If the API isn't ready yet, use [MSW (Mock Service Worker)](https://mswjs.io/):
-```bash
-pnpm --filter @agrovet/web add -D msw
-```
-Create handlers in `src/mocks/handlers.ts` matching the API contract in `apps/api/README.md`.
+The back office dashboard (sales ledger, stock, products, reports) described in the PRD
+as Module E. When it lands it should mount under `/app` behind auth, with this landing
+page staying at `/`.
