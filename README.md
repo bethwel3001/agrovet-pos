@@ -32,8 +32,13 @@ agrovet-pos/
 ├── pnpm-workspace.yaml
 ├── tsconfig.base.json
 │
-├── docs/
+├── docs-technical/
 │   └── PRD.md                    ← Full Product Requirements Document (read this first)
+│
+├── docs-business/
+│   ├── pitch.md                  ← Hackathon pitch deck content
+│   ├── monetization.md           ← Pricing tiers, unit economics, risks
+│   └── validation-interviews.md  ← Pre-build customer interview guide
 │
 ├── apps/
 │   ├── api/                      ← MODULE B/C/D: Bot backend (Fastify + Node.js)
