@@ -10,9 +10,9 @@ visitor off to WhatsApp — that button is the only conversion action on the pag
 ## Run it
 
 ```bash
+pnpm install          # from the repo root
 cd apps/web
-pnpm install --ignore-workspace   # see "Why --ignore-workspace" below
-pnpm dev                          # http://localhost:5173
+pnpm dev              # http://localhost:5173
 ```
 
 ```bash
@@ -21,12 +21,12 @@ pnpm preview     # serve dist/ locally
 pnpm typecheck
 ```
 
-### Why `--ignore-workspace`
+### Tailwind v4
 
-A plain `pnpm install` at the repo root currently fails: `apps/api` depends on
-`kra-etims-js-sdk`, which is not published to npm (the PRD points at a GitHub repo).
-Until that dependency is pinned to a resolvable source, install `apps/web` on its own.
-It has its own lockfile and no workspace dependencies, so it also deploys standalone.
+This app uses Tailwind **v4** via `@tailwindcss/vite`, not the v3 + PostCSS + `autoprefixer`
+setup. There is no `tailwind.config.js` — the theme lives in `src/index.css` under `@theme`.
+If you add a package here, don't reintroduce `postcss`/`autoprefixer`; the Vite plugin
+replaces both.
 
 ---
 

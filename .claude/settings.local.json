@@ -10,7 +10,13 @@
       "Bash(npm --version)",
       "Bash(mv docker-compose.yml infra/docker-compose.yml)",
       "Bash(mv docker-compose.dev.yml infra/docker-compose.dev.yml)",
-      "Bash(mv .env.example infra/.env.example)"
+      "Bash(mv .env.example infra/.env.example)",
+      "Bash(winget install:*)",
+      "Bash(export PATH=\"/c/Program Files/GitHub CLI:$PATH\")",
+      "Bash(gh --version)",
+      "Bash(gh repo:*)",
+      "Bash(gh api:*)",
+      "Bash(pnpm install:*)"
     ]
   }
 }
