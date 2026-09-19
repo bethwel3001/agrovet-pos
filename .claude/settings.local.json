@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(claude:*)",
+      "mcp__claude_ai_Claude_Docs__guide",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "Bash(gh auth:*)",
+      "Bash(npm --version)"
+    ]
+  }
+}

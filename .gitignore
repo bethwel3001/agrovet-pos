@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Environment
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/settings.json
+.idea/
+*.swp
+
+# Docker volumes (local dev)
+postgres_data/
+redis_data/
+
+# Prisma
+packages/db/src/generated/
+
+# WhatsApp session data (never commit)
+.wwebjs_auth/
+.wwebjs_cache/
+wa-sessions/
+
+# Uploads / receipts
+uploads/
+receipts/
