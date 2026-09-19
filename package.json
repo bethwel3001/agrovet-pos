@@ -4,7 +4,7 @@
   "private": true,
   "description": "WhatsApp-based KRA eTIMS compliant POS for Kenyan agrovet shops",
   "scripts": {
-    "dev": "docker compose -f docker-compose.dev.yml up",
+    "dev": "docker compose -f infra/docker-compose.dev.yml up",
     "build": "pnpm -r build",
     "db:generate": "pnpm --filter @agrovet/db db:generate",
     "db:migrate": "pnpm --filter @agrovet/db db:migrate",

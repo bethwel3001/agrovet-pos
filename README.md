@@ -23,36 +23,35 @@ Bot:          → Calls KRA eTIMS API → sends back a receipt image with QR cod
 
 ```
 agrovet-pos/
-├── README.md                     ← You are here
-├── .gitignore
-├── .env.example                  ← All required environment variables
-├── docker-compose.yml            ← Production orchestration
-├── docker-compose.dev.yml        ← Local dev (postgres + redis + openwa only)
-├── package.json                  ← pnpm workspace root
-├── pnpm-workspace.yaml
-├── tsconfig.base.json
+├── README.md                        ← You are here
+├── .gitignore                       ← (required at root by git)
+├── package.json                     ← (required at root by pnpm workspaces)
+├── pnpm-workspace.yaml              ← (required at root by pnpm)
+├── tsconfig.base.json               ← (required at root by TypeScript)
 │
 ├── docs-technical/
-│   └── PRD.md                    ← Full Product Requirements Document (read this first)
+│   └── PRD.md                       ← Full PRD — feed this to the LLM
 │
 ├── docs-business/
-│   ├── pitch.md                  ← Hackathon pitch deck content
-│   ├── monetization.md           ← Pricing tiers, unit economics, risks
-│   └── validation-interviews.md  ← Pre-build customer interview guide
+│   ├── pitch.md                     ← Hackathon pitch content
+│   ├── monetization.md              ← Pricing tiers, unit economics
+│   └── validation-interviews.md     ← Customer interview guide
 │
 ├── apps/
-│   ├── api/                      ← MODULE B/C/D: Bot backend (Fastify + Node.js)
-│   │   └── README.md             ← Setup + implementation guide
-│   └── web/                      ← MODULE E: React back office dashboard
-│       └── README.md             ← Setup + implementation guide
-│
-├── packages/
-│   └── db/                       ← MODULE A: Database schema (Prisma + PostgreSQL)
-│       ├── prisma/schema.prisma  ← Source of truth for all data models
+│   ├── api/                         ← MODULE B/C/D: Bot backend
+│   │   └── README.md
+│   └── web/                         ← MODULE E: React dashboard
 │       └── README.md
 │
-└── infra/                        ← MODULE A: Infrastructure (Nginx, Docker)
-    ├── nginx/nginx.conf
+├── packages/
+│   └── db/                          ← MODULE A: Prisma schema + seeds
+│       └── README.md
+│
+└── infra/                           ← MODULE A: All infrastructure
+    ├── docker-compose.yml           ← Production orchestration
+    ├── docker-compose.dev.yml       ← Local dev (postgres+redis+openwa)
+    ├── .env.example                 ← All environment variables
+    ├── nginx/nginx.conf             ← Reverse proxy config
     └── README.md
 ```
 
@@ -87,48 +86,133 @@ agrovet-pos/
 
 ---
 
-## Quick Start (Local Dev)
+## Project Setup
 
 ### Prerequisites
-- Docker Desktop
-- Node.js 20+
-- pnpm (`npm install -g pnpm`)
 
-### 1. Clone & configure
+| Tool | Version | Install |
+|------|---------|---------|
+| **Node.js** | v20+ | https://nodejs.org |
+| **pnpm** | v9+ | `npm install -g pnpm` |
+| **Docker Desktop** | Latest | https://docker.com |
+| **Git** | Latest | https://git-scm.com |
+
+### One-Command Setup
+
+Clone the repo and run the setup script — it handles everything:
+
 ```bash
 git clone <repo-url> && cd agrovet-pos
-cp .env.example .env
-# Edit .env with your KRA sandbox credentials and JWT secret
+bash infra/scripts/setup.sh
 ```
 
-### 2. Start infrastructure
-```bash
-docker compose -f docker-compose.dev.yml up -d
-# Starts: PostgreSQL, Redis, OpenWA
+**The script will:**
+1. Verify all prerequisites are installed and correct versions
+2. Copy `infra/.env.example` → `.env` (if not already present)
+3. Install all Node.js dependencies via pnpm
+4. Start Docker services: PostgreSQL, Redis, OpenWA
+5. Wait for PostgreSQL to be healthy
+6. Run Prisma database migrations (create all tables)
+7. Seed demo data (sample shop, products, owner user)
+
+When complete you'll see:
+```
+  Services running:
+    PostgreSQL   → localhost:5432
+    Redis        → localhost:6379
+    OpenWA       → http://localhost:2785
+
+  Demo login:
+    Email:    owner@kilimo.co.ke
+    Password: password123
 ```
 
-### 3. Set up database
-```bash
-pnpm install
-pnpm db:migrate
-pnpm db:seed
-```
+### After Setup — Start Your Module
 
-### 4. Start API (hot reload)
+**API developers (Module B/C/D):**
 ```bash
 pnpm --filter @agrovet/api dev
+# → http://localhost:3000
 ```
 
-### 5. Start web dashboard
+**Web developers (Module E):**
 ```bash
+pnpm --filter @agrovet/web dev
+# → http://localhost:5173
+```
+
+**Database developers (Module A):**
+```bash
+# Edit schema
+code packages/db/prisma/schema.prisma
+
+# Run migrations after changes
+pnpm db:migrate
+
+# Re-seed
+pnpm db:seed
+
+# Open Prisma Studio (visual DB browser)
+pnpm --filter @agrovet/db db:studio
+```
+
+### Configure OpenWA (WhatsApp Bot)
+
+After running setup, connect the WhatsApp number:
+
+1. Open **http://localhost:2785** (OpenWA dashboard)
+2. Create an **API key** → paste into `.env` as `OPENWA_API_KEY`
+3. Create a session named **`agrovet-bot`** → scan QR code with your WhatsApp
+4. Set webhook URL:
+   - **Docker → host:** `http://host.docker.internal:3000/webhook/openwa`
+   - **All in Docker:** `http://api:3000/webhook/openwa`
+5. Test: send a WhatsApp message to the connected number — you should see it in the API logs
+
+> Use a **dedicated phone number** for the bot (not your personal number).
+
+### Manual Setup (Step-by-Step)
+
+If you prefer to run each step manually instead of the script:
+
+```bash
+# 1. Clone
+git clone <repo-url> && cd agrovet-pos
+
+# 2. Environment
+cp infra/.env.example .env
+
+# 3. Dependencies
+pnpm install
+
+# 4. Start infra
+docker compose -f infra/docker-compose.dev.yml up -d
+
+# 5. Wait for postgres (check with)
+docker exec agrovet-postgres-dev pg_isready -U postgres
+
+# 6. Migrations
+pnpm db:generate
+pnpm db:migrate
+
+# 7. Seed
+pnpm db:seed
+
+# 8. Start API
+pnpm --filter @agrovet/api dev
+
+# 9. Start web (in another terminal)
 pnpm --filter @agrovet/web dev
 ```
 
-### 6. Configure OpenWA webhook
-1. Open http://localhost:2785 (OpenWA dashboard)
-2. Create an API key → paste into `.env` as `OPENWA_API_KEY`
-3. Create a session named `agrovet-bot` → scan QR on WhatsApp
-4. Set webhook URL to `http://host.docker.internal:3000/webhook/openwa`
+### Tearing Down
+
+```bash
+# Stop all Docker services
+docker compose -f infra/docker-compose.dev.yml down
+
+# Stop and wipe all data (fresh start)
+docker compose -f infra/docker-compose.dev.yml down -v
+```
 
 ---
 

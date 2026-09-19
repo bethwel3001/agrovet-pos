@@ -7,7 +7,10 @@
       "WebSearch",
       "WebFetch(domain:github.com)",
       "Bash(gh auth:*)",
-      "Bash(npm --version)"
+      "Bash(npm --version)",
+      "Bash(mv docker-compose.yml infra/docker-compose.yml)",
+      "Bash(mv docker-compose.dev.yml infra/docker-compose.dev.yml)",
+      "Bash(mv .env.example infra/.env.example)"
     ]
   }
 }
